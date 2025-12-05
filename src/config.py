@@ -31,6 +31,8 @@ class Config:
     OPENAI_API_KEY = os.getenv("OPENAI_EMBEDDING_API_KEY")
     OPENAI_BASE_URL = os.getenv("OPENAI_EMBEDDING_BASE_URL")
     OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL_NAME", "Qwen3-Embedding-4B")
+
+    COHERE_API_KEY = os.getenv("COHERE_API_KEY")
     
     # General configuration
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
