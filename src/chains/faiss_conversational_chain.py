@@ -1,16 +1,12 @@
-"""
-FAISS-based Conversational RAG Chain - Multi-turn dialogue with memory
-Implemented using LangChain Agent
-"""
 from langchain_core.documents import Document
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain.agents import create_agent
 from langchain.tools import BaseTool
 from langchain.agents.middleware import SummarizationMiddleware
-# from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver # Keep async
+import aiosqlite # Ensure import
+import asyncio
 
-from typing import List, Dict, Any
+from typing import List, Any, Optional
 from pathlib import Path
 
 from src.config import Config
@@ -26,36 +22,42 @@ logger = get_logger(__name__)
 
 # Vector store path
 FAISS_INDEX_PATH = Config.FAISS_INDEX_PATH
-
-# Ensure directory exists
 FAISS_INDEX_PATH.mkdir(parents=True, exist_ok=True)
 
 class RetrievalTool(BaseTool):
-    """Tool for retrieving documents from vector store"""
-    
+    # ... (Keep RetrievalTool code unchanged) ...
     name: str = "retrieval_tool"
     description: str = "Retrieve relevant documents from knowledge base"
-    retriever: Any = None  # Add retriever as Pydantic field
-    last_docs: List[Document] = []  # Store the most recent retrieved documents
+    retriever: Any = None
+    last_docs: List[Document] = []
     
     def __init__(self, retriever):
-        """Initialize retrieval tool"""
-        super().__init__(retriever=retriever)  # Pass retriever via parameter
+        super().__init__(retriever=retriever)
     
     def _run(self, query: str) -> str:
-        """Execute retrieval operation"""
-        docs = self.retriever.invoke(query)
-        self.last_docs = docs  # Save retrieved documents
-        
+        # Synchronous call entry point (if called synchronously for some reason)
+        # Note: In fully async Agents, LangChain typically looks for _arun first or runs _run in a thread pool
+        return self._run_sync(query)
+
+    async def _arun(self, query: str) -> str:
+        """Async implementation of retrieval"""
+        # Assuming retriever supports async invoke, if not, can use run_in_executor
+        docs = await self.retriever.ainvoke(query) 
+        self.last_docs = docs
         if not docs:
             return "No relevant documents found."
-        
-        # Format documents
+        formatted_docs = "\n\n".join([f"<doc>\n{doc.page_content}\n</doc>" for doc in docs])
+        return formatted_docs
+
+    def _run_sync(self, query: str) -> str:
+        docs = self.retriever.invoke(query)
+        self.last_docs = docs
+        if not docs:
+            return "No relevant documents found."
         formatted_docs = "\n\n".join([f"<doc>\n{doc.page_content}\n</doc>" for doc in docs])
         return formatted_docs
     
     def get_last_docs(self) -> List[Document]:
-        """Get the most recently retrieved documents"""
         return self.last_docs
 
 class FAISSConversationalRAGChain:
@@ -63,65 +65,117 @@ class FAISSConversationalRAGChain:
     
     def __init__(self, session_id: str = "default"):
         """
-        Initialize
-        
-        Args:
-            session_id: Session ID
+        Initialize strictly synchronous components.
+        Async components are initialized in ainitialize().
         """
         self.session_id = session_id
-        
-        # LLM
         self.llm = get_chat_model()
-        
-        # Load documents from data/documents directory
         self.document_loader = get_document_loader()
-        
-        # Get FAISS vector store
         self.faiss_store = get_faiss_vector_store()
-        
         self.retriever = create_hybrid_retriever(self.faiss_store.vector_store)
-        
-        # Memory - use simple list to store conversation history
-        self.history = []
-        
-        # Get prompt
         self.prompt_template = PromptTemplate.template
-        
-        # Create retrieval tool
         self.retrieval_tool = RetrievalTool(self.retriever)
         
-        logger.info(f"Initializing conversation chain for session: {self.session_id}")
-        import sqlite3
+        # Async resource placeholders
+        self.agent = None
+        self.db_conn = None
         
-        for file in Path(Config.SHORT_TERM_MEMORY).rglob("*"):
-            if file.is_file():  
-                file.unlink(missing_ok=True) 
-        conn=sqlite3.connect(str(Config.SHORT_TERM_MEMORY/ f"{self.session_id}.db"), check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL;")
+        # Key: Record the Event Loop that created the resources
+        self._bound_loop = None 
 
-        from src.memory.long_term_memory import retrieve_similar_history_middleware,save_assistant_response_middleware,save_user_messages_middleware,sanitize_dangling_tool_middleware
-        # Create agent with middleware for summarization
+    async def ainitialize(self):
+        """
+        Async initialization: Need to check if Loop has changed on each Streamlit Rerun
+        """
+        current_loop = asyncio.get_running_loop()
+
+        # Check if reinitialization is needed
+        # If already initialized and current Loop is the same as bound Loop, skip
+        if self.agent is not None and self._bound_loop is current_loop:
+            return
+
+        logger.info(f"Async Initializing (Loop Changed/First Run) for session: {self.session_id}")
+
+        # 1. Resource cleanup: If there was a previous connection from old Loop, try to clean up (although old Loop may be dead)
+        if self.db_conn:
+            try:
+                # Only attempt to close if connection is not already closed
+                await self.db_conn.close()
+            except Exception:
+                pass # Ignore errors when closing old connections
+
+        # 1. MCP Client & Tools (Async)
+        from langchain_mcp_adapters.client import MultiServerMCPClient
+        
+        # Your API Key
+        TAVILY_KEY = Config.TAVILY_KEY
+
+        client = MultiServerMCPClient(
+            {
+                "tavily": {
+                    "transport": "streamable_http",  # Tavily is an HTTP MCP server
+                    "url": "https://mcp.tavily.com/mcp/",
+                    "headers": {
+                        # Key modification points:
+                        # 1. Most Tavily services expect header key to be "api-key" (without X-)
+                        "api-key": TAVILY_KEY,
+                        # 2. Or Content-Type
+                        "Content-Type": "application/json",
+                        # 3. To prevent certain gateway interceptions, can also add Bearer Token form (optional, double insurance)
+                        "Authorization": f"Bearer {TAVILY_KEY}"
+                    }
+                }
+            }
+        )
+        
+
+        
+        try:
+            tavily_tools = await client.get_tools()
+            logger.info(f"MCP Tools loaded: {len(tavily_tools)}")
+        except Exception as e:
+            logger.error(f"MCP Connection failed: {e}")
+            tavily_tools = []
+
+        # 3. Database connection (must be rebuilt in current Loop)
+        db_path = Config.SHORT_TERM_MEMORY / f"{self.session_id}.db"
+        self.db_conn = await aiosqlite.connect(str(db_path), check_same_thread=False)
+        await self.db_conn.execute("PRAGMA journal_mode=WAL;")
+        await self.db_conn.commit()
+
+        # 4. Middleware
+        from src.memory.long_term_memory import (
+            retrieve_similar_history_middleware,
+            save_assistant_response_middleware,
+            save_user_messages_middleware,
+            sanitize_dangling_tool_middleware
+        )
+        from src.memory.query_rewriter import query_rewriter_middleware
+
+        # 5. Rebuild Agent (Agent's checkpointer must be bound to new connection)
         self.agent = create_agent(
             model=self.llm,
-            tools=[self.retrieval_tool],
+            tools=[self.retrieval_tool, *tavily_tools],
             middleware=[
                 sanitize_dangling_tool_middleware,
+                query_rewriter_middleware,
+
                 SummarizationMiddleware(
                     model=get_chat_model(model="claude-sonnet-4-5"),
-                    max_tokens_before_summary=4000,  # Trigger summarization at 4000 tokens
-                    messages_to_keep=20,  # Keep last 20 messages after summary
+                    max_tokens_before_summary=4000,
+                    messages_to_keep=20,
                 ),
-                # 调整中间件顺序，确保在模型调用前后正确执行
-                retrieve_similar_history_middleware,  # 在模型调用前获取相关历史
-                save_user_messages_middleware,        # 在模型调用前保存用户消息
-                save_assistant_response_middleware    # 在模型调用后保存助手响应
+                retrieve_similar_history_middleware,
+                save_user_messages_middleware,
+                save_assistant_response_middleware
             ],
-            
-            # Use SqliteSaver instead of AsyncSqliteSaver to avoid event loop issues
-            checkpointer = SqliteSaver(conn=conn),
+            # The conn here is created under the new Loop
+            checkpointer=AsyncSqliteSaver(conn=self.db_conn),
         )
-    
-    
+        
+        # 6. Update bound Loop marker
+        self._bound_loop = current_loop
+        logger.info("Initialization complete on current event loop.")
  
     from streamlit.runtime.uploaded_file_manager import UploadedFile
     def add_documents(self, file_path: UploadedFile):
@@ -166,25 +220,16 @@ class FAISSConversationalRAGChain:
         self.faiss_store.clear()
 
 # Session management
+    async def aclose(self):
+            """Cleanup async resources"""
+            if self.db_conn:
+                await self.db_conn.close()
+
+# Session management
 _sessions = {}
 
 def get_conversational_chain(session_id: str) -> FAISSConversationalRAGChain:
-    """Get or create conversation Chain"""
-    import asyncio
-    
-    # Ensure we have an event loop
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
+    """Simple factory, does NOT initialize async parts yet."""
     if session_id not in _sessions:
         _sessions[session_id] = FAISSConversationalRAGChain(session_id)
     return _sessions[session_id]
-
-def clear_session(session_id: str):
-    """Clear session"""
-    if session_id in _sessions:
-        _sessions[session_id].clear_memory()
-        del _sessions[session_id]
