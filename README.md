@@ -1,191 +1,137 @@
-# 📚 KnowledgeGPT
+# 🚀 NexusRAG: Advanced Document Intelligence Platform
 
-> 🤖 Your AI-powered knowledge assistant that brings documents to life
+**NexusRAG** is a cutting-edge Retrieval-Augmented Generation (RAG) system that transforms how you interact with your documents. Have natural conversations with your knowledge base and extract insights with unprecedented accuracy.
 
-**Version:** 1.0.0 | **Python:** 3.9+ | **License:** MIT | **Framework:** LangChain 0.1.4
+## ✨ Core Features
 
----
+### 🧠 Advanced Hybrid Retrieval
+- **Dual-Engine Search**: Combines FAISS vector search (semantic) with BM25 (lexical) for superior retrieval quality
+- **Cohere Reranking**: Implements state-of-the-art reranking to prioritize the most relevant context
+- **Adaptive Chunking**: Intelligent document segmentation preserves context while optimizing for retrieval
 
-## 🚀 Introduction
+### 📚 Universal Document Support
+- **Multi-Format Processing**: Seamlessly handles PDF, Word, TXT, Markdown, and HTML files
+- **Structure Preservation**: Maintains document structure and relationships during processing
+- **Metadata Enrichment**: Automatically enhances documents with source tracking and attribution
 
-**KnowledgeGPT** transforms how you interact with your documents. Using cutting-edge Retrieval-Augmented Generation (RAG) technology, it allows you to have natural conversations with your PDFs, Word documents, and text files. Simply upload your documents and start asking questions in plain language to receive accurate, context-aware responses based on your content.
+### 💬 Intelligent Conversation
+- **Claude AI Integration**: Powered by Anthropic's Claude for nuanced understanding and natural responses
+- **Contextual Memory**: Maintains conversation history for coherent multi-turn interactions
+- **Source Attribution**: Every answer includes references to specific source documents
 
-> 💡 **Perfect for researchers, students, professionals, and knowledge workers who need to quickly extract insights from large documents.**
+### ⚡ Performance Optimizations
+- **Async Architecture**: Built with asyncio for responsive performance even with large document collections
+- **Efficient Indexing**: FAISS vector database enables millisecond retrieval from thousands of documents
+- **Streaming Responses**: Real-time token-by-token display for immediate feedback
 
-<details>
-<summary>💫 Why KnowledgeGPT?</summary>
+### 🛡️ Enterprise-Ready
+- **Session Management**: Supports multiple concurrent users with isolated conversation contexts
+- **Robust Error Handling**: Comprehensive logging and graceful failure recovery
+- **Configurable Parameters**: Fine-tune retrieval settings, model behavior, and chunking strategies
 
-- **⏱️ Save Hours of Reading**: Extract key information without reading entire documents
-- **🔍 Discover Hidden Insights**: Uncover connections across multiple documents
-- **📖 Enhance Learning**: Interact with complex material through natural conversation
-- **⚡ Boost Productivity**: Get answers to specific questions instantly
-- **🔒 Privacy First**: Your documents never leave your machine - no data harvesting
+## 🔧 Technical Architecture
 
-</details>
-
----
-
-## ✨ Features
-
-### 📄 Universal Document Support
-Seamlessly process PDFs, Word documents, TXT files, and Markdown with intelligent text extraction that preserves document structure.
-
-**Supported formats:** PDF | DOCX | TXT | Markdown
-
-### 🧠 Advanced RAG Architecture
-Utilizes state-of-the-art retrieval techniques with FAISS vector search for lightning-fast, highly relevant document retrieval.
-
-**Tech stack:** FAISS | Vector Search | Semantic Matching
-
-### 💬 Conversational Memory
-Maintains context across your conversation with both short-term session memory and long-term persistent memory for more natural interactions.
-
-**Memory types:** Short-term Session | Long-term Persistent | Context Awareness
-
-### 🔍 Source Attribution
-Every answer includes references to the specific documents and sections used, ensuring transparency and verifiability.
-
-### ⚡ Real-time Responses
-Streaming response generation provides immediate feedback with token-by-token display for a fluid chat experience.
-
-### 🛠️ Customizable Experience
-Fine-tune retrieval parameters, model behavior, and interface settings to match your specific use case and preferences.
-
----
-
-## 🛠️ Technology Stack
-
-- 🤖 **Claude AI** - Advanced reasoning
-- 🔗 **LangChain** - RAG framework
-- 🔎 **FAISS** - Vector search
-- 🌐 **Streamlit** - Web interface
-- 📊 **Qwen** - Embeddings
-
----
-
-## 🚀 Quick Start
-
-### 📋 Prerequisites
-
-- Python 3.9 or higher
-- API keys for Claude AI
-- API keys for OpenAI/Qwen Embeddings
-
-### 💻 Installation
-
-<details>
-<summary>📦 Step-by-step instructions</summary>
-
-**1️⃣ Clone the repository**
-
-```bash
-git clone https://github.com/yourusername/knowledgegpt.git
-cd knowledgegpt
+```
+nexusrag/
+├── app/                    # Application layer
+│   └── web_chatbot.py      # Streamlit web interface
+├── src/                    # Core source code
+│   ├── chains/             # LangChain chains
+│   ├── chat_model/         # LLM integration
+│   ├── embedding/          # Vector embeddings
+│   ├── loaders/            # Document loaders
+│   ├── memory/             # Conversation memory
+│   ├── prompts/            # Prompt templates
+│   ├── utils/              # Utility functions
+│   ├── vectorstores/       # Vector store implementations
+│   └── config.py           # Configuration
+├── data/                   # Data directory
+│   ├── documents/          # Document storage
+│   ├── faiss_index/        # FAISS vector indices
+│   └── long_term_memory/   # Persistent memory storage
+└── requirements.txt        # Dependencies
 ```
 
-**2️⃣ Install dependencies**
+## 🔍 How It Works
+
+1. **Document Processing Pipeline**:
+   - Documents are loaded using specialized loaders for each format
+   - Text is extracted and split into optimally-sized chunks
+   - Each chunk is embedded using state-of-the-art embedding models
+   - Embeddings are indexed in FAISS for efficient vector search
+
+2. **Hybrid Retrieval System**:
+   - User queries are processed through both semantic and keyword search
+   - Results are combined and reranked based on relevance
+   - Top matches are selected as context for the language model
+
+3. **Conversational AI Layer**:
+   - Retrieved context is formatted with specialized prompts
+   - Claude AI generates responses grounded in the provided context
+   - Conversation history informs follow-up interactions
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.9+
+- API keys for Claude AI and OpenAI/Qwen Embeddings
+
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/yourusername/nexusrag.git
+cd nexusrag
+```
+
+2. **Install dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**3️⃣ Set up environment variables**
+3. **Set up environment variables**
 
 Create a `.env` file in the root directory:
 
-```env
+```
 ANTHROPIC_LLM_API_KEY=your_anthropic_api_key
 OPENAI_EMBEDDING_API_KEY=your_openai_api_key
+ANTHROPIC_MODEL_NAME=claude-3-7-sonnet
+OPENAI_EMBEDDING_MODEL_NAME=Qwen3-Embedding-4B
 ```
 
-**4️⃣ Run the application**
+4. **Run the application**
 
 ```bash
 streamlit run app/web_chatbot.py
 ```
 
-**5️⃣ Access the web interface**
+5. **Access the web interface**
 
 Open your browser and go to `http://localhost:8501`
 
-</details>
+## 💡 Usage Guide
 
-<details>
-<summary>🐳 Docker installation (alternative)</summary>
+### Document Management
 
-```bash
-# Build the Docker image
-docker build -t knowledgegpt .
+- **Upload Documents**: Click "Upload New Document" in the sidebar and select your files
+- **View Knowledge Base**: See all uploaded documents in the sidebar
+- **Remove Documents**: Delete individual documents or clear the entire knowledge base
 
-# Run the container
-docker run -p 8501:8501 --env-file .env knowledgegpt
-```
+### Asking Questions
 
-</details>
-
----
-
-## 📚 Usage Guide
-
-### Step 1: 📤 Upload Documents
-Click "Upload New Document" in the sidebar and select your files (PDF, DOCX, TXT, MD).
-
-### Step 2: ❓ Ask Questions
-Type your questions in natural language in the chat input field at the bottom.
-
-### Step 3: ✅ Get Insights
-Receive detailed answers with reference sources from your documents.
-
----
-
-### 💡 Example Questions
-
-- "What are the key points in the executive summary?"
-- "Summarize the methodology section in bullet points"
-- "Compare the financial results from 2023 to 2024"
-- "What did the author say about climate change impacts?"
-- "Extract all tables from the document and format them nicely"
-
----
-
-## 🧩 Project Architecture
-
-```
-knowledgegpt/
-|
-+-- app/                          # Application layer
-|   +-- web_chatbot.py            # Streamlit web interface
-|
-+-- src/                          # Core source code
-|   +-- chains/                   # LangChain chains
-|   |   +-- faiss_conversational_chain.py
-|   +-- chat_model/               # LLM integration
-|   +-- embedding/                # Vector embeddings
-|   +-- loaders/                  # Document loaders
-|   +-- memory/                   # Conversation memory
-|   |   +-- long_term_memory.py
-|   +-- prompts/                  # Prompt templates
-|   +-- utils/                    # Utility functions
-|   +-- vectorstores/             # Vector store implementations
-|   +-- config.py                 # Configuration
-|
-+-- data/                         # Data directory
-|   +-- documents/                # Document storage
-|   +-- faiss_index/              # FAISS vector indices
-|   +-- long_term_memory/         # Persistent memory storage
-|
-+-- requirements.txt              # Dependencies
-+-- README.md                     # Documentation
-```
-
----
+- **Simple Queries**: "What are the key points in the executive summary?"
+- **Comparative Analysis**: "Compare the financial results from 2023 to 2024"
+- **Data Extraction**: "Extract all tables from section 3 and format them"
+- **Summarization**: "Summarize the methodology section in bullet points"
+- **Multi-document Questions**: "What do these documents say about climate change?"
 
 ## ⚙️ Advanced Configuration
 
-Fine-tune KnowledgeGPT by adjusting parameters in `src/config.py`:
-
-<details>
-<summary>🔧 Available Configuration Options</summary>
+Fine-tune NexusRAG by adjusting parameters in `src/config.py`:
 
 ```python
 # LLM configuration
@@ -200,98 +146,45 @@ SIMILARITY_THRESHOLD = 0.7                  # Minimum relevance score
 # Chunking parameters
 CHUNK_SIZE = 1000                           # Text chunk size
 CHUNK_OVERLAP = 200                         # Overlap between chunks
-
-# Memory configuration
-MAX_HISTORY_LENGTH = 20                     # Conversation turns to remember
 ```
 
-</details>
+## 🔮 Future Roadmap
 
----
+- **Multi-language Support**: Expand capabilities to process and respond in multiple languages
+- **Document Comparison**: Add specialized tools for side-by-side document analysis
+- **Custom Knowledge Bases**: Support for creating and switching between multiple knowledge domains
+- **Advanced Analytics**: Visualization of document relationships and knowledge graphs
+- **API Integration**: REST API for programmatic access to the RAG capabilities
 
-## 🔮 Roadmap
+## 🛠️ Technology Stack
 
-### ✅ Current Features
-- Multi-document support
-- Source attribution
-- Conversational memory
+- **LangChain**: Framework for building LLM applications
+- **FAISS**: Efficient similarity search and clustering of dense vectors
+- **Claude AI**: Advanced language model from Anthropic
+- **Streamlit**: Interactive web interface
+- **Qwen Embeddings**: High-quality text embeddings
 
-### 🔜 Coming Soon
-- Multi-language support
-- Document comparison
-- Custom knowledge bases
+## 📚 Best Practices
 
-### 🚀 Future Plans
-- Image/chart analysis
-- Data visualization
-- Mobile application
-
----
-
-## ❓ FAQ
-
-<details>
-<summary><b>📄 What types of documents can I use?</b></summary>
-
-KnowledgeGPT supports PDF, Word documents (.docx), plain text files (.txt), and Markdown (.md) files.
-</details>
-
-<details>
-<summary><b>🔒 Is my data secure?</b></summary>
-
-Yes! Your documents are processed locally on your machine. Only the necessary chunks are sent to the LLM API for generating responses, and no data is stored on external servers.
-</details>
-
-<details>
-<summary><b>🎯 How accurate are the responses?</b></summary>
-
-KnowledgeGPT uses advanced RAG techniques to retrieve the most relevant information from your documents. The accuracy depends on the quality of your documents and the specificity of your questions. The system always provides source references so you can verify the information.
-</details>
-
-<details>
-<summary><b>🔄 Can I use a different LLM?</b></summary>
-
-Yes, the system is designed to be model-agnostic. You can modify the configuration to use other LLMs like GPT-4, Llama, or Mistral by adjusting the settings in the config file.
-</details>
-
-<details>
-<summary><b>📊 How many documents can I upload?</b></summary>
-
-There's no hard limit on the number of documents, but performance may decrease with very large document collections. For optimal performance, we recommend keeping your knowledge base under 1,000 pages total.
-</details>
-
----
+- **Document Quality**: Higher quality documents yield better results
+- **Specific Questions**: More specific queries tend to get more precise answers
+- **Context Awareness**: The system maintains conversation history, so follow-up questions work well
+- **Source Verification**: Always check the provided source references for critical information
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-**Steps to contribute:**
-
-1. 🍴 Fork the repository
-2. 🌿 Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. 💾 Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. 📤 Push to the branch (`git push origin feature/amazing-feature`)
-5. 🎉 Open a Pull Request
-
----
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-## 🙏 Acknowledgements
-
-- 🔗 [LangChain](https://python.langchain.com/) - Amazing RAG framework
-- 🤖 [Anthropic Claude](https://www.anthropic.com/claude) - Powerful LLM
-- 🔎 [FAISS](https://github.com/facebookresearch/faiss) - Efficient vector search
-- 🎨 [Streamlit](https://streamlit.io/) - Easy-to-use web framework
-- 📊 [Qwen](https://github.com/QwenLM/Qwen) - High-quality embeddings
-
----
-
-**Built with 💙 for the knowledge seekers of the world**
-
-[🐛 Report Bug](https://github.com/yourusername/knowledgegpt/issues) • [✨ Request Feature](https://github.com/yourusername/knowledgegpt/issues) • [⭐ Star Us](https://github.com/yourusername/knowledgegpt/stargazers)
+Built with 💙 for knowledge seekers everywhere
